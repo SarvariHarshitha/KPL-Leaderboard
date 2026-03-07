@@ -6,7 +6,7 @@ import PostsPage from './pages/PostsPage.jsx'
 import ProfilePage from './pages/ProfilePage.jsx'
 import { useAuth } from './lib/useAuth.js'
 import HomePage from './pages/HomePage.jsx'
-import { fetchNotifications, markNotificationsRead, deleteNotification, deleteAllNotifications } from './lib/api.js'
+import { fetchNotifications, markNotificationsRead, deleteNotification, deleteAllNotifications, fetchUsers } from './lib/api.js'
 
 function RequireAuth({ children }) {
   const { user, loading } = useAuth()
@@ -191,6 +191,136 @@ function NotificationBell({ uid }) {
   )
 }
 
+function UserSearch() {
+  const [query, setQuery] = useState('')
+  const [allUsers, setAllUsers] = useState([])
+  const [open, setOpen] = useState(false)
+  const [selectedIdx, setSelectedIdx] = useState(0)
+  const wrapRef = useRef(null)
+  const inputRef = useRef(null)
+  const navigate = useNavigate()
+
+  // Load users once on mount
+  useEffect(() => {
+    fetchUsers()
+      .then(setAllUsers)
+      .catch((err) => console.error('Failed to fetch users for search:', err))
+  }, [])
+
+  // Close on outside click
+  useEffect(() => {
+    function handleClick(e) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) {
+        setOpen(false)
+      }
+    }
+    if (open) document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [open])
+
+  const filtered = query.trim().length === 0
+    ? []
+    : allUsers.filter((u) => {
+        const q = query.toLowerCase()
+        return (
+          (u.nickname || '').toLowerCase().includes(q) ||
+          (u.displayName || '').toLowerCase().includes(q) ||
+          (u.email || '').toLowerCase().includes(q)
+        )
+      })
+
+  function handleSelect(u) {
+    const profileName = u.nickname || u.displayName || u.email
+    navigate(`/profile/${encodeURIComponent(profileName)}`)
+    setQuery('')
+    setOpen(false)
+    inputRef.current?.blur()
+  }
+
+  function handleKeyDown(e) {
+    if (!open || filtered.length === 0) return
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setSelectedIdx((i) => (i + 1) % filtered.length)
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setSelectedIdx((i) => (i - 1 + filtered.length) % filtered.length)
+    } else if (e.key === 'Enter') {
+      e.preventDefault()
+      handleSelect(filtered[selectedIdx])
+    } else if (e.key === 'Escape') {
+      setOpen(false)
+      inputRef.current?.blur()
+    }
+  }
+
+  return (
+    <div className="user-search" ref={wrapRef}>
+      <div className="user-search__input-wrap">
+        <span className="user-search__icon" aria-hidden="true">🔍</span>
+        <input
+          ref={inputRef}
+          className="user-search__input"
+          type="text"
+          placeholder="Search users…"
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value)
+            setOpen(e.target.value.trim().length > 0)
+            setSelectedIdx(0)
+          }}
+          onFocus={() => { if (query.trim()) setOpen(true) }}
+          onKeyDown={handleKeyDown}
+        />
+        {query && (
+          <button
+            className="user-search__clear"
+            type="button"
+            aria-label="Clear search"
+            onClick={() => { setQuery(''); setOpen(false); inputRef.current?.focus() }}
+          >
+            ✕
+          </button>
+        )}
+      </div>
+
+      {open && filtered.length > 0 && (
+        <ul className="user-search__dropdown">
+          {filtered.map((u, idx) => (
+            <li
+              key={u._id}
+              className={`user-search__item${idx === selectedIdx ? ' is-selected' : ''}`}
+              onMouseDown={(e) => { e.preventDefault(); handleSelect(u) }}
+              onMouseEnter={() => setSelectedIdx(idx)}
+            >
+              {u.photoURL ? (
+                <img className="avatar avatar--sm" src={u.photoURL} alt="" referrerPolicy="no-referrer" />
+              ) : (
+                <span className="avatar avatar--sm avatar--placeholder">
+                  {(u.nickname || u.displayName || u.email || '?')[0].toUpperCase()}
+                </span>
+              )}
+              <div className="user-search__info">
+                <span className="user-search__name">{u.nickname || u.displayName || u.email}</span>
+                {u.nickname && u.displayName && (
+                  <span className="user-search__sub">{u.displayName}</span>
+                )}
+                {(u.nickname || u.displayName) && u.email && (
+                  <span className="user-search__sub">{u.email}</span>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {open && query.trim().length > 0 && filtered.length === 0 && (
+        <div className="user-search__dropdown user-search__empty">No users found</div>
+      )}
+    </div>
+  )
+}
+
 function App() {
   const { user, loading, loginWithGoogle, logout } = useAuth()
   const [darkMode, setDarkMode] = useState(() => {
@@ -235,6 +365,8 @@ function App() {
               </NavLink>
             )}
           </nav>
+
+          {user && <UserSearch />}
 
           <div className="auth">
             {user && <NotificationBell uid={user.uid} />}
