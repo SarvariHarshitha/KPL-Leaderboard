@@ -99,7 +99,7 @@ function CommentItem({ comment, postId, depth, user, isAdmin, onDelete, onReply 
   }
 
   return (
-    <li className="comment" style={{ marginLeft: depth > 0 ? 20 : 0 }}>
+    <li className="comment">
       <div className="comment__top">
         {comment.authorPhotoURL ? (
           <img className="avatar avatar--sm" src={comment.authorPhotoURL} alt="" />
