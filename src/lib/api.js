@@ -102,3 +102,11 @@ export function markNotificationsRead(uid) {
     body: JSON.stringify({ uid }),
   })
 }
+
+export function deleteNotification(id) {
+  return request(`/api/notifications/${id}`, { method: 'DELETE' })
+}
+
+export function deleteAllNotifications(uid) {
+  return request(`/api/notifications?uid=${encodeURIComponent(uid)}`, { method: 'DELETE' })
+}

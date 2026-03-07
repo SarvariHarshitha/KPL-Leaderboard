@@ -6,7 +6,7 @@ import PostsPage from './pages/PostsPage.jsx'
 import ProfilePage from './pages/ProfilePage.jsx'
 import { useAuth } from './lib/useAuth.js'
 import HomePage from './pages/HomePage.jsx'
-import { fetchNotifications, markNotificationsRead } from './lib/api.js'
+import { fetchNotifications, markNotificationsRead, deleteNotification, deleteAllNotifications } from './lib/api.js'
 
 function RequireAuth({ children }) {
   const { user, loading } = useAuth()
@@ -83,6 +83,25 @@ function NotificationBell({ uid }) {
     }
   }
 
+  const handleDeleteOne = async (e, id) => {
+    e.stopPropagation()
+    try {
+      await deleteNotification(id)
+      setNotifications((prev) => prev.filter((n) => n._id !== id))
+    } catch (err) {
+      console.error('Failed to delete notification', err)
+    }
+  }
+
+  const handleClearAll = async () => {
+    try {
+      await deleteAllNotifications(uid)
+      setNotifications([])
+    } catch (err) {
+      console.error('Failed to clear notifications', err)
+    }
+  }
+
   const handleClickNotif = (notif) => {
     // Mark as read locally
     setNotifications((prev) =>
@@ -112,11 +131,18 @@ function NotificationBell({ uid }) {
           <div className="notif-panel">
             <div className="notif-panel__header">
               <span className="notif-panel__title">Notifications</span>
-              {unreadCount > 0 && (
-                <button className="btn btn--ghost notif-panel__mark" type="button" onClick={handleMarkAllRead}>
-                  Mark all read
-                </button>
-              )}
+              <span className="notif-panel__actions">
+                {unreadCount > 0 && (
+                  <button className="btn btn--ghost notif-panel__mark" type="button" onClick={handleMarkAllRead}>
+                    Mark all read
+                  </button>
+                )}
+                {notifications.length > 0 && (
+                  <button className="btn btn--ghost notif-panel__mark notif-panel__clear" type="button" onClick={handleClearAll}>
+                    Clear all
+                  </button>
+                )}
+              </span>
             </div>
 
             <div className="notif-panel__list">
@@ -127,23 +153,35 @@ function NotificationBell({ uid }) {
                 <div className="notif-empty">No notifications yet</div>
               )}
               {notifications.map((n) => (
-                <button
+                <div
                   key={n._id}
                   className={`notif-item${n.read ? '' : ' notif-item--unread'}`}
-                  type="button"
-                  onClick={() => handleClickNotif(n)}
                 >
-                  <span className="notif-item__icon">
-                    {n.type === 'mention' && '📣'}
-                    {n.type === 'comment' && '💬'}
-                    {n.type === 'rating' && '⭐'}
-                    {n.type === 'new_post' && '📝'}
-                  </span>
-                  <span className="notif-item__body">
-                    <span className="notif-item__msg">{n.message}</span>
-                    <span className="notif-item__time">{timeAgo(n.createdAt)}</span>
-                  </span>
-                </button>
+                  <button
+                    className="notif-item__main"
+                    type="button"
+                    onClick={() => handleClickNotif(n)}
+                  >
+                    <span className="notif-item__icon">
+                      {n.type === 'mention' && '📣'}
+                      {n.type === 'comment' && '💬'}
+                      {n.type === 'rating' && '⭐'}
+                      {n.type === 'new_post' && '📝'}
+                    </span>
+                    <span className="notif-item__body">
+                      <span className="notif-item__msg">{n.message}</span>
+                      <span className="notif-item__time">{timeAgo(n.createdAt)}</span>
+                    </span>
+                  </button>
+                  <button
+                    className="btn btn--ghost notif-item__delete"
+                    type="button"
+                    title="Delete notification"
+                    onClick={(e) => handleDeleteOne(e, n._id)}
+                  >
+                    ✕
+                  </button>
+                </div>
               ))}
             </div>
           </div>

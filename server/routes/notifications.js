@@ -53,4 +53,30 @@ router.get('/unread-count', async (req, res) => {
   }
 })
 
+// DELETE /api/notifications/:id — delete a single notification
+router.delete('/:id', async (req, res) => {
+  try {
+    const result = await Notification.findByIdAndDelete(req.params.id)
+    if (!result) return res.status(404).json({ error: 'Notification not found' })
+    res.json({ ok: true })
+  } catch (err) {
+    console.error('DELETE /notifications/:id error:', err)
+    res.status(500).json({ error: 'Server error' })
+  }
+})
+
+// DELETE /api/notifications?uid=xxx — delete all notifications for a user
+router.delete('/', async (req, res) => {
+  try {
+    const { uid } = req.query
+    if (!uid) return res.status(400).json({ error: 'uid is required' })
+
+    await Notification.deleteMany({ recipientUid: uid })
+    res.json({ ok: true })
+  } catch (err) {
+    console.error('DELETE /notifications error:', err)
+    res.status(500).json({ error: 'Server error' })
+  }
+})
+
 export default router
