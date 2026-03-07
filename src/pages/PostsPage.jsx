@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useKpl } from '../lib/useKpl.js'
 import { extractMentionedNames } from '../lib/kplStore.js'
@@ -76,12 +76,17 @@ function CommentComposer({ postId, disabled, onAdd }) {
 }
 
 export default function PostsPage() {
-  const { state, addPost, addComment, deletePost, deleteComment, ratePost } = useKpl()
+  const { state, loading, addPost, addComment, deletePost, deleteComment, ratePost, refresh } = useKpl()
   const { user } = useAuth()
   const [text, setText] = useState('')
   const [error, setError] = useState('')
   const [dialogOpen, setDialogOpen] = useState(false)
   const dialogRef = useRef(null)
+
+  // Refresh posts every time the page is visited
+  useEffect(() => {
+    refresh()
+  }, [refresh])
 
   const posts = state.posts
 
@@ -115,7 +120,9 @@ export default function PostsPage() {
       </section>
 
       <section className="stack">
-        {posts.length === 0 ? (
+        {loading && posts.length === 0 ? (
+          <div className="card" style={{ textAlign: 'center' }}>Loading posts…</div>
+        ) : posts.length === 0 ? (
           <div className="empty">No posts yet. Be the first to publish for KPL.</div>
         ) : (
           posts.map((post) => {
