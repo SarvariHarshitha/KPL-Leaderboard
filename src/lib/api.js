@@ -79,3 +79,19 @@ export function updateProfile(uid, { bio, birthday }) {
     body: JSON.stringify({ bio, birthday }),
   })
 }
+
+// Notifications
+export function fetchNotifications(uid) {
+  return request(`/api/notifications?uid=${encodeURIComponent(uid)}`)
+}
+
+export function fetchUnreadCount(uid) {
+  return request(`/api/notifications/unread-count?uid=${encodeURIComponent(uid)}`)
+}
+
+export function markNotificationsRead(uid) {
+  return request('/api/notifications/read', {
+    method: 'PATCH',
+    body: JSON.stringify({ uid }),
+  })
+}

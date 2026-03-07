@@ -14,6 +14,7 @@ import authRoutes from './routes/auth.js'
 import postRoutes from './routes/posts.js'
 import leaderboardRoutes from './routes/leaderboard.js'
 import profileRoutes from './routes/profile.js'
+import notificationRoutes from './routes/notifications.js'
 
 const PORT = process.env.PORT || 4000
 const MONGODB_URI = process.env.MONGODB_URI
@@ -49,6 +50,7 @@ app.use('/api/auth', authRoutes)
 app.use('/api/posts', postRoutes)
 app.use('/api/leaderboard', leaderboardRoutes)
 app.use('/api/profile', profileRoutes)
+app.use('/api/notifications', notificationRoutes)
 
 // Health check
 app.get('/api/health', (_req, res) => res.json({ ok: true }))

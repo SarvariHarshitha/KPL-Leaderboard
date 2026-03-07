@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import Post from '../models/Post.js'
 import User from '../models/User.js'
+import { notifyMentioned, notifyComment, notifyRating } from '../lib/notify.js'
 
 const router = Router()
 
@@ -35,6 +36,14 @@ router.post('/', async (req, res) => {
       authorPhotoURL: authorPhotoURL || '',
       text: text.trim(),
       mentionedNames: extractMentionedNames(text),
+    })
+
+    // Notify mentioned users
+    notifyMentioned({
+      mentionedNames: post.mentionedNames,
+      authorName,
+      authorPhotoURL,
+      postId: post._id,
     })
 
     res.status(201).json(post.toJSON())
@@ -82,6 +91,9 @@ router.post('/:id/comments', async (req, res) => {
 
     post.comments.push({ authorId, author: authorName, authorPhotoURL: authorPhotoURL || '', text: text.trim() })
     await post.save()
+
+    // Notify post author about the comment
+    notifyComment({ post, commenterName: authorName, commenterPhotoURL: authorPhotoURL })
 
     res.status(201).json(post.toJSON())
   } catch (err) {
@@ -149,6 +161,12 @@ router.post('/:id/rate', async (req, res) => {
     }
 
     await post.save()
+
+    // Notify post author about the rating (only when adding, not removing)
+    if (value > 0) {
+      notifyRating({ post, raterName })
+    }
+
     res.json(post.toJSON())
   } catch (err) {
     console.error('POST /rate error:', err)
