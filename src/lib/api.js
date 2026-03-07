@@ -50,6 +50,13 @@ export function removeComment(postId, commentId, userId) {
   return request(`/api/posts/${postId}/comments/${commentId}?userId=${encodeURIComponent(userId)}`, { method: 'DELETE' })
 }
 
+export function createReply(postId, commentId, { authorId, authorName, authorPhotoURL, text }) {
+  return request(`/api/posts/${postId}/comments/${commentId}/replies`, {
+    method: 'POST',
+    body: JSON.stringify({ authorId, authorName, authorPhotoURL, text }),
+  })
+}
+
 // Ratings
 export function ratePost(postId, { raterId, raterName, rating }) {
   return request(`/api/posts/${postId}/rate`, {

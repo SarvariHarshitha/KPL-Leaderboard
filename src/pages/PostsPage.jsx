@@ -12,6 +12,15 @@ function getPostAverageRating(post) {
   return sum / ratings.length
 }
 
+function countComments(comments) {
+  let count = 0
+  for (const c of comments) {
+    count += 1
+    if (c.replies?.length) count += countComments(c.replies)
+  }
+  return count
+}
+
 function Stars({ value }) {
   const rounded = Math.round((Number(value) || 0) * 10) / 10
   return (
@@ -75,8 +84,92 @@ function CommentComposer({ postId, disabled, onAdd }) {
   )
 }
 
+function CommentItem({ comment, postId, depth, user, isAdmin, onDelete, onReply }) {
+  const [showReplyForm, setShowReplyForm] = useState(false)
+  const [replyText, setReplyText] = useState('')
+
+  const canDelete = isAdmin || (user && comment.authorId === user.uid)
+
+  function handleReplySubmit(e) {
+    e.preventDefault()
+    if (!replyText.trim()) return
+    onReply({ postId, commentId: comment._id, text: replyText.trim() })
+    setReplyText('')
+    setShowReplyForm(false)
+  }
+
+  return (
+    <li className="comment" style={{ marginLeft: depth > 0 ? 20 : 0 }}>
+      <div className="comment__top">
+        {comment.authorPhotoURL ? (
+          <img className="avatar avatar--sm" src={comment.authorPhotoURL} alt="" />
+        ) : (
+          <span className="avatar avatar--sm avatar--placeholder">{(comment.author || '?')[0]}</span>
+        )}
+        <Link to={`/profile/${encodeURIComponent(comment.author)}`} className="comment__author comment__author--link">{comment.author}</Link>
+        <span className="dot">•</span>
+        <span className="muted small">{new Date(comment.createdAt).toLocaleString()}</span>
+        <span style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
+          {user && (
+            <button
+              className="btn btn--ghost btn--xs"
+              type="button"
+              onClick={() => setShowReplyForm((v) => !v)}
+              title="Reply"
+            >
+              ↩️
+            </button>
+          )}
+          {canDelete && (
+            <button
+              className="btn btn--ghost btn--xs"
+              type="button"
+              onClick={() => onDelete({ postId, commentId: comment._id, userId: user.uid })}
+              title="Delete comment"
+            >
+              🗑️
+            </button>
+          )}
+        </span>
+      </div>
+      <div className="comment__text">{comment.text}</div>
+
+      {showReplyForm && (
+        <form className="reply-composer" onSubmit={handleReplySubmit}>
+          <input
+            className="input input--sm"
+            placeholder="Write a reply…"
+            value={replyText}
+            onChange={(e) => setReplyText(e.target.value)}
+            autoFocus
+          />
+          <button className="btn btn--ghost btn--xs" type="submit">Reply</button>
+          <button className="btn btn--ghost btn--xs" type="button" onClick={() => setShowReplyForm(false)}>Cancel</button>
+        </form>
+      )}
+
+      {comment.replies?.length > 0 && (
+        <ul className="commentList commentList--nested">
+          {comment.replies.map((reply) => (
+            <CommentItem
+              key={reply._id}
+              comment={reply}
+              postId={postId}
+              depth={depth + 1}
+              user={user}
+              isAdmin={isAdmin}
+              onDelete={onDelete}
+              onReply={onReply}
+            />
+          ))}
+        </ul>
+      )}
+    </li>
+  )
+}
+
 export default function PostsPage() {
-  const { state, loading, addPost, addComment, deletePost, deleteComment, ratePost, refresh } = useKpl()
+  const { state, loading, addPost, addComment, addReply, deletePost, deleteComment, ratePost, refresh } = useKpl()
   const { user } = useAuth()
   const [text, setText] = useState('')
   const [error, setError] = useState('')
@@ -215,37 +308,32 @@ export default function PostsPage() {
                 <div className="post__comments">
                   <div className="row row--space">
                     <h3 className="h3">Comments</h3>
-                    <span className="muted small">{post.comments.length}</span>
+                    <span className="muted small">{countComments(post.comments)}</span>
                   </div>
 
                   {post.comments.length ? (
                     <ul className="commentList">
                       {post.comments.map((c) => (
-                        <li key={c._id} className="comment">
-                          <div className="comment__top">
-                            {c.authorPhotoURL ? (
-                              <img className="avatar avatar--sm" src={c.authorPhotoURL} alt="" />
-                            ) : (
-                              <span className="avatar avatar--sm avatar--placeholder">{(c.author || '?')[0]}</span>
-                            )}
-                            <Link to={`/profile/${encodeURIComponent(c.author)}`} className="comment__author comment__author--link">{c.author}</Link>
-                            <span className="dot">•</span>
-                            <span className="muted small">{new Date(c.createdAt).toLocaleString()}</span>
-                            {(isAdmin || (user && c.authorId === user.uid)) && (
-                              <span style={{ marginLeft: 'auto' }}>
-                                <button
-                                  className="btn btn--ghost"
-                                  type="button"
-                                  onClick={() => deleteComment({ postId: post._id, commentId: c._id, userId: user.uid })}
-                                  title="Delete comment"
-                                >
-                                  🗑️
-                                </button>
-                              </span>
-                            )}
-                          </div>
-                          <div className="comment__text">{c.text}</div>
-                        </li>
+                        <CommentItem
+                          key={c._id}
+                          comment={c}
+                          postId={post._id}
+                          depth={0}
+                          user={user}
+                          isAdmin={isAdmin}
+                          onDelete={deleteComment}
+                          onReply={({ postId: pid, commentId, text }) => {
+                            if (!user) return
+                            addReply({
+                              postId: pid,
+                              commentId,
+                              authorId: user.uid,
+                              authorName: user.displayName || user.email,
+                              authorPhotoURL: user.photoURL || '',
+                              text,
+                            })
+                          }}
+                        />
                       ))}
                     </ul>
                   ) : (

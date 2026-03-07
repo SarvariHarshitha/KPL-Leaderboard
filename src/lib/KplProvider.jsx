@@ -31,6 +31,10 @@ export function KplProvider({ children }) {
       await api.createComment(postId, { authorId, authorName, authorPhotoURL, text })
       await refresh()
     },
+    addReply: async ({ postId, commentId, authorId, authorName, authorPhotoURL, text }) => {
+      await api.createReply(postId, commentId, { authorId, authorName, authorPhotoURL, text })
+      await refresh()
+    },
     deletePost: async ({ postId, userId }) => {
       await api.removePost(postId, userId)
       await refresh()

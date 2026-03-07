@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import mongoose from 'mongoose'
 import Post from '../models/Post.js'
 import User from '../models/User.js'
 import { notifyMentioned, notifyComment, notifyRating } from '../lib/notify.js'
@@ -111,24 +112,87 @@ router.delete('/:postId/comments/:commentId', async (req, res) => {
     const post = await Post.findById(req.params.postId)
     if (!post) return res.status(404).json({ error: 'Post not found' })
 
-    const comment = post.comments.id(req.params.commentId)
-    if (!comment) return res.status(404).json({ error: 'Comment not found' })
-
     // Check if user is admin or the comment author
     const reqUser = await User.findOne({ firebaseUid: userId }).lean()
     const isAdmin = reqUser?.role === 'admin'
-    const isAuthor = comment.authorId === userId
 
-    if (!isAdmin && !isAuthor) {
-      return res.status(403).json({ error: 'Only the author or an admin can delete this comment' })
+    // Recursively find and remove a comment by id
+    function removeFromList(list, id) {
+      for (let i = 0; i < list.length; i++) {
+        if (list[i]._id.toString() === id) {
+          if (!isAdmin && list[i].authorId !== userId) return false
+          list.splice(i, 1)
+          return true
+        }
+        if (list[i].replies?.length && removeFromList(list[i].replies, id)) return true
+      }
+      return false
     }
 
-    post.comments = post.comments.filter((c) => c._id.toString() !== req.params.commentId)
+    if (!removeFromList(post.comments, req.params.commentId)) {
+      return res.status(404).json({ error: 'Comment not found or not authorized' })
+    }
+
+    post.markModified('comments')
     await post.save()
 
     res.json(post.toJSON())
   } catch (err) {
     console.error('DELETE /comment error:', err)
+    res.status(500).json({ error: 'Server error' })
+  }
+})
+
+// POST /api/posts/:postId/comments/:commentId/replies — add reply to a comment
+router.post('/:postId/comments/:commentId/replies', async (req, res) => {
+  try {
+    const { authorId, authorName, authorPhotoURL, text } = req.body
+    if (!authorId || !authorName) return res.status(400).json({ error: 'Author info required' })
+    if (!text?.trim()) return res.status(400).json({ error: 'Reply text is required' })
+
+    const post = await Post.findById(req.params.postId)
+    if (!post) return res.status(404).json({ error: 'Post not found' })
+
+    // Recursively find a comment by id
+    function findComment(list, id) {
+      for (const c of list) {
+        if (c._id.toString() === id) return c
+        if (c.replies?.length) {
+          const found = findComment(c.replies, id)
+          if (found) return found
+        }
+      }
+      return null
+    }
+
+    const parent = findComment(post.comments, req.params.commentId)
+    if (!parent) return res.status(404).json({ error: 'Comment not found' })
+
+    const reply = {
+      _id: new mongoose.Types.ObjectId(),
+      authorId,
+      author: authorName,
+      authorPhotoURL: authorPhotoURL || '',
+      text: text.trim(),
+      replies: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }
+
+    if (!parent.replies) parent.replies = []
+    parent.replies.push(reply)
+
+    post.markModified('comments')
+    await post.save()
+
+    // Notify the parent comment author about the reply
+    if (parent.authorId !== authorId) {
+      notifyComment({ post, commenterName: authorName, commenterPhotoURL: authorPhotoURL })
+    }
+
+    res.status(201).json(post.toJSON())
+  } catch (err) {
+    console.error('POST /replies error:', err)
     res.status(500).json({ error: 'Server error' })
   }
 })

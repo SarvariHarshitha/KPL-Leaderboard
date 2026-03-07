@@ -9,12 +9,14 @@ const ratingSchema = new mongoose.Schema(
   { timestamps: true },
 )
 
+// Recursive comment schema — replies are comments too
 const commentSchema = new mongoose.Schema(
   {
     authorId: { type: String, required: true },
     author: { type: String, required: true },
     authorPhotoURL: { type: String, default: '' },
     text: { type: String, required: true },
+    replies: { type: [mongoose.Schema.Types.Mixed], default: [] },
   },
   { timestamps: true },
 )
