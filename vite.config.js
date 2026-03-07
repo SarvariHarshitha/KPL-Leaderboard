@@ -12,4 +12,6 @@ export default defineConfig({
       },
     },
   },
+  // SPA fallback — serve index.html for all routes on preview/production
+  appType: 'spa',
 })

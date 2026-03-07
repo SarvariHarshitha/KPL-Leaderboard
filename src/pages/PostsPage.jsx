@@ -160,19 +160,20 @@ export default function PostsPage() {
                   <div className="post__score">
                     <Stars value={avg} />
                     <div className="muted small">{(post.ratings ?? []).length || 0} ratings</div>
-                    <button
-                      className="btn btn--ghost"
-                      type="button"
-                      onClick={() => {
-                        if (!confirm('Delete this post?')) return
-                        deletePost({ postId: post._id, userId: user.uid })
-                      }}
-                      style={{ marginTop: 10 }}
-                      disabled={!canDeletePost}
-                      title="Delete post"
-                    >
-                      🗑️
-                    </button>
+                    {canDeletePost && (
+                      <button
+                        className="btn btn--ghost"
+                        type="button"
+                        onClick={() => {
+                          if (!confirm('Delete this post?')) return
+                          deletePost({ postId: post._id, userId: user.uid })
+                        }}
+                        style={{ marginTop: 10 }}
+                        title="Delete post"
+                      >
+                        🗑️
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -223,17 +224,18 @@ export default function PostsPage() {
                             <Link to={`/profile/${encodeURIComponent(c.author)}`} className="comment__author comment__author--link">{c.author}</Link>
                             <span className="dot">•</span>
                             <span className="muted small">{new Date(c.createdAt).toLocaleString()}</span>
-                            <span style={{ marginLeft: 'auto' }}>
-                              <button
-                                className="btn btn--ghost"
-                                type="button"
-                                onClick={() => deleteComment({ postId: post._id, commentId: c._id, userId: user.uid })}
-                                disabled={!user || (!isAdmin && c.authorId !== user.uid)}
-                                title="Delete comment"
-                              >
-                                🗑️
-                              </button>
-                            </span>
+                            {(isAdmin || (user && c.authorId === user.uid)) && (
+                              <span style={{ marginLeft: 'auto' }}>
+                                <button
+                                  className="btn btn--ghost"
+                                  type="button"
+                                  onClick={() => deleteComment({ postId: post._id, commentId: c._id, userId: user.uid })}
+                                  title="Delete comment"
+                                >
+                                  🗑️
+                                </button>
+                              </span>
+                            )}
                           </div>
                           <div className="comment__text">{c.text}</div>
                         </li>
