@@ -1,0 +1,62 @@
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  /* Theme variables */
+  --bg: #f6f7f9;
+  --panel: rgba(255, 255, 255, 0.85);
+  --panel-solid: #ffffff;
+  --text: rgba(0, 0, 0, 0.9);
+  --muted: rgba(0, 0, 0, 0.6);
+  --border: rgba(0, 0, 0, 0.12);
+  --shadow: rgba(0, 0, 0, 0.12);
+  --pill-bg: rgba(0, 0, 0, 0.06);
+  --pill-border: rgba(0, 0, 0, 0.18);
+
+  color-scheme: light;
+  color: var(--text);
+  background-color: var(--bg);
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  font-weight: 500;
+  color: var(--text);
+  text-decoration: inherit;
+}
+a:hover {
+  color: var(--text);
+  opacity: 0.85;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: var(--bg);
+}
+
+/* Dark mode */
+html[data-theme='dark'] {
+  --bg: #0b0f14;
+  --panel: rgba(17, 22, 30, 0.72);
+  --panel-solid: #11161e;
+  /* Make text noticeably whiter in dark mode */
+  --text: rgba(255, 255, 255, 0.96);
+  --muted: rgba(255, 255, 255, 0.76);
+  --border: rgba(255, 255, 255, 0.14);
+  --shadow: rgba(0, 0, 0, 0.55);
+  --pill-bg: rgba(255, 255, 255, 0.08);
+  --pill-border: rgba(255, 255, 255, 0.16);
+
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
