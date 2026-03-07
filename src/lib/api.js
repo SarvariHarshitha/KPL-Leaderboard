@@ -34,8 +34,8 @@ export function createPost({ authorId, authorName, authorPhotoURL, text }) {
   })
 }
 
-export function removePost(postId) {
-  return request(`/api/posts/${postId}`, { method: 'DELETE' })
+export function removePost(postId, userId) {
+  return request(`/api/posts/${postId}?userId=${encodeURIComponent(userId)}`, { method: 'DELETE' })
 }
 
 // Comments
@@ -46,8 +46,8 @@ export function createComment(postId, { authorId, authorName, authorPhotoURL, te
   })
 }
 
-export function removeComment(postId, commentId) {
-  return request(`/api/posts/${postId}/comments/${commentId}`, { method: 'DELETE' })
+export function removeComment(postId, commentId, userId) {
+  return request(`/api/posts/${postId}/comments/${commentId}?userId=${encodeURIComponent(userId)}`, { method: 'DELETE' })
 }
 
 // Ratings

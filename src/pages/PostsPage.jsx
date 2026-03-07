@@ -126,6 +126,9 @@ export default function PostsPage() {
             const isMentioned = user && mentionedLower.some(
               (m) => m === userFirstName || m === userName,
             )
+            const isAdmin = user?.role === 'admin'
+            const isPostAuthor = user && post.authorId === user.uid
+            const canDeletePost = isAdmin || isPostAuthor
             return (
               <article key={post._id} className="post">
                 <div className="post__top">
@@ -162,10 +165,10 @@ export default function PostsPage() {
                       type="button"
                       onClick={() => {
                         if (!confirm('Delete this post?')) return
-                        deletePost({ postId: post._id })
+                        deletePost({ postId: post._id, userId: user.uid })
                       }}
                       style={{ marginTop: 10 }}
-                      disabled={!user}
+                      disabled={!canDeletePost}
                       title="Delete post"
                     >
                       🗑️
@@ -224,8 +227,8 @@ export default function PostsPage() {
                               <button
                                 className="btn btn--ghost"
                                 type="button"
-                                onClick={() => deleteComment({ postId: post._id, commentId: c._id })}
-                                disabled={!user || c.authorId !== user.uid}
+                                onClick={() => deleteComment({ postId: post._id, commentId: c._id, userId: user.uid })}
+                                disabled={!user || (!isAdmin && c.authorId !== user.uid)}
                                 title="Delete comment"
                               >
                                 🗑️

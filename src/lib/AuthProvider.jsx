@@ -24,14 +24,18 @@ export function AuthProvider({ children }) {
       const mapped = mapUser(u)
       setUser(mapped)
       setLoading(false)
-      // Sync user to MongoDB
+      // Sync user to MongoDB and get role
       if (mapped) {
         syncUser({
           firebaseUid: mapped.uid,
           displayName: mapped.displayName,
           email: mapped.email,
           photoURL: mapped.photoURL,
-        }).catch((err) => console.error('User sync failed:', err))
+        })
+          .then((dbUser) => {
+            setUser((prev) => prev ? { ...prev, role: dbUser.role || 'user' } : prev)
+          })
+          .catch((err) => console.error('User sync failed:', err))
       }
     })
     return () => unsub()

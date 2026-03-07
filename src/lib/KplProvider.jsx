@@ -31,12 +31,12 @@ export function KplProvider({ children }) {
       await api.createComment(postId, { authorId, authorName, authorPhotoURL, text })
       await refresh()
     },
-    deletePost: async ({ postId }) => {
-      await api.removePost(postId)
+    deletePost: async ({ postId, userId }) => {
+      await api.removePost(postId, userId)
       await refresh()
     },
-    deleteComment: async ({ postId, commentId }) => {
-      await api.removeComment(postId, commentId)
+    deleteComment: async ({ postId, commentId, userId }) => {
+      await api.removeComment(postId, commentId, userId)
       await refresh()
     },
     ratePost: async ({ postId, raterId, raterName, rating }) => {

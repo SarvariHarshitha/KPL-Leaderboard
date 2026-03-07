@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import Post from '../models/Post.js'
+import User from '../models/User.js'
 
 const router = Router()
 
@@ -46,8 +47,22 @@ router.post('/', async (req, res) => {
 // DELETE /api/posts/:id
 router.delete('/:id', async (req, res) => {
   try {
-    const post = await Post.findByIdAndDelete(req.params.id)
+    const userId = req.query.userId
+    if (!userId) return res.status(400).json({ error: 'userId is required' })
+
+    const post = await Post.findById(req.params.id)
     if (!post) return res.status(404).json({ error: 'Post not found' })
+
+    // Check if user is admin or the post author
+    const reqUser = await User.findOne({ firebaseUid: userId }).lean()
+    const isAdmin = reqUser?.role === 'admin'
+    const isAuthor = post.authorId === userId
+
+    if (!isAdmin && !isAuthor) {
+      return res.status(403).json({ error: 'Only the author or an admin can delete this post' })
+    }
+
+    await Post.findByIdAndDelete(req.params.id)
     res.json({ ok: true })
   } catch (err) {
     console.error('DELETE /posts error:', err)
@@ -78,8 +93,23 @@ router.post('/:id/comments', async (req, res) => {
 // DELETE /api/posts/:postId/comments/:commentId
 router.delete('/:postId/comments/:commentId', async (req, res) => {
   try {
+    const userId = req.query.userId
+    if (!userId) return res.status(400).json({ error: 'userId is required' })
+
     const post = await Post.findById(req.params.postId)
     if (!post) return res.status(404).json({ error: 'Post not found' })
+
+    const comment = post.comments.id(req.params.commentId)
+    if (!comment) return res.status(404).json({ error: 'Comment not found' })
+
+    // Check if user is admin or the comment author
+    const reqUser = await User.findOne({ firebaseUid: userId }).lean()
+    const isAdmin = reqUser?.role === 'admin'
+    const isAuthor = comment.authorId === userId
+
+    if (!isAdmin && !isAuthor) {
+      return res.status(403).json({ error: 'Only the author or an admin can delete this comment' })
+    }
 
     post.comments = post.comments.filter((c) => c._id.toString() !== req.params.commentId)
     await post.save()
