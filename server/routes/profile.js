@@ -8,11 +8,19 @@ const router = Router()
 router.get('/:name', async (req, res) => {
   try {
     const name = decodeURIComponent(req.params.name)
+    const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
-    // Find user (case-insensitive)
-    const user = await User.findOne({
-      displayName: { $regex: new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') },
+    // Try exact displayName match first (case-insensitive)
+    let user = await User.findOne({
+      displayName: { $regex: new RegExp(`^${escaped}$`, 'i') },
     }).lean()
+
+    // If not found, try matching as a first name (e.g. @Asha → "Asha Sharma")
+    if (!user) {
+      user = await User.findOne({
+        displayName: { $regex: new RegExp(`^${escaped}\\b`, 'i') },
+      }).lean()
+    }
 
     if (!user) return res.status(404).json({ error: 'User not found' })
 
