@@ -64,6 +64,36 @@
   white-space: nowrap;
 }
 
+.auth__avatar-link {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.auth__avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--border);
+  transition: border-color 0.2s, transform 0.2s;
+}
+
+.auth__avatar-link:hover .auth__avatar {
+  border-color: var(--link);
+  transform: scale(1.08);
+}
+
+.auth__avatar--placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--pill-bg);
+  color: var(--text);
+  font-weight: 700;
+  font-size: 15px;
+}
+
 .theme-toggle {
   font-size: 20px;
   line-height: 1;
@@ -732,8 +762,7 @@
 .comment__author--link,
 .pill--link,
 .table__link,
-.podium__name--link,
-.auth__user--link {
+.podium__name--link {
   text-decoration: none;
   color: inherit;
   cursor: pointer;
@@ -742,8 +771,7 @@
 .post__author--link:hover,
 .comment__author--link:hover,
 .table__link:hover,
-.podium__name--link:hover,
-.auth__user--link:hover {
+.podium__name--link:hover {
   text-decoration: underline;
 }
 

@@ -213,9 +213,21 @@ function App() {
               <>
                 <Link
                   to={`/profile/${encodeURIComponent(user.displayName || user.email)}`}
-                  className="muted small auth__user auth__user--link"
+                  className="auth__avatar-link"
+                  title={user.displayName || user.email}
                 >
-                  {user.displayName || user.email}
+                  {user.photoURL ? (
+                    <img
+                      src={user.photoURL}
+                      alt={user.displayName || user.email}
+                      className="auth__avatar"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <span className="auth__avatar auth__avatar--placeholder">
+                      {(user.displayName || user.email || '?').charAt(0).toUpperCase()}
+                    </span>
+                  )}
                 </Link>
                 <button className="btn btn--ghost" type="button" onClick={() => logout()}>
                   Logout
