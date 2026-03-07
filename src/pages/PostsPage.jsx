@@ -4,6 +4,7 @@ import { useKpl } from '../lib/useKpl.js'
 import { extractMentionedNames } from '../lib/kplStore.js'
 import { useAuth } from '../lib/useAuth.js'
 import MentionTextarea from '../components/MentionTextarea.jsx'
+import TrashIcon from '../components/TrashIcon.jsx'
 
 function getPostAverageRating(post) {
   const ratings = post.ratings ?? []
@@ -127,7 +128,7 @@ function CommentItem({ comment, postId, depth, user, isAdmin, onDelete, onReply 
               onClick={() => onDelete({ postId, commentId: comment._id, userId: user.uid })}
               title="Delete comment"
             >
-              🗑️
+              <TrashIcon size={14} />
             </button>
           )}
         </span>
@@ -271,7 +272,7 @@ export default function PostsPage() {
                         style={{ marginTop: 10 }}
                         title="Delete post"
                       >
-                        🗑️
+                        <TrashIcon size={16} />
                       </button>
                     )}
                   </div>

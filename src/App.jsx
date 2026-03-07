@@ -7,6 +7,7 @@ import ProfilePage from './pages/ProfilePage.jsx'
 import { useAuth } from './lib/useAuth.js'
 import HomePage from './pages/HomePage.jsx'
 import { fetchNotifications, markNotificationsRead, deleteNotification, deleteAllNotifications, fetchUsers } from './lib/api.js'
+import TrashIcon from './components/TrashIcon.jsx'
 
 function RequireAuth({ children }) {
   const { user, loading } = useAuth()
@@ -179,7 +180,7 @@ function NotificationBell({ uid }) {
                     title="Delete notification"
                     onClick={(e) => handleDeleteOne(e, n._id)}
                   >
-                    ✕
+                    <TrashIcon size={14} />
                   </button>
                 </div>
               ))}
