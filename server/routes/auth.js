@@ -25,7 +25,7 @@ router.post('/sync', async (req, res) => {
 // GET /api/auth/users — list all registered users (for @mention autocomplete)
 router.get('/users', async (_req, res) => {
   try {
-    const users = await User.find({}, 'displayName email photoURL').sort({ displayName: 1 }).lean()
+    const users = await User.find({}, 'displayName nickname email photoURL').sort({ displayName: 1 }).lean()
     res.json(users)
   } catch (err) {
     console.error('auth/users error:', err)

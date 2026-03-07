@@ -52,6 +52,7 @@ export default function ProfilePage() {
 
   // Edit state
   const [editing, setEditing] = useState(false)
+  const [nickname, setNickname] = useState('')
   const [bio, setBio] = useState('')
   const [birthday, setBirthday] = useState('')
   const [saving, setSaving] = useState(false)
@@ -64,6 +65,7 @@ export default function ProfilePage() {
     fetchProfile(name)
       .then((d) => {
         setData(d)
+        setNickname(d.user.nickname || '')
         setBio(d.user.bio || '')
         setBirthday(d.user.birthday || '')
       })
@@ -75,8 +77,8 @@ export default function ProfilePage() {
     if (!user) return
     setSaving(true)
     try {
-      const updated = await updateProfile(user.uid, { bio, birthday })
-      setData((prev) => ({ ...prev, user: { ...prev.user, bio: updated.bio, birthday: updated.birthday } }))
+      const updated = await updateProfile(user.uid, { nickname, bio, birthday })
+      setData((prev) => ({ ...prev, user: { ...prev.user, nickname: updated.nickname || '', bio: updated.bio, birthday: updated.birthday } }))
       setEditing(false)
     } catch (err) {
       setError(err.message)
@@ -112,11 +114,14 @@ export default function ProfilePage() {
             <img className="profile-avatar" src={profileUser.photoURL} alt="" />
           ) : (
             <span className="profile-avatar profile-avatar--placeholder">
-              {(profileUser.displayName || '?')[0]}
+              {(profileUser.nickname || profileUser.displayName || '?')[0]}
             </span>
           )}
           <div className="profile-header__info">
-            <h1 className="profile-header__name">{profileUser.displayName}</h1>
+            <h1 className="profile-header__name">{profileUser.nickname || profileUser.displayName}</h1>
+            {profileUser.nickname && (
+              <div className="muted small">{profileUser.displayName}</div>
+            )}
             <div className="muted small">{profileUser.email}</div>
             {profileUser.birthday && (
               <div className="muted small">🎂 {profileUser.birthday}</div>
@@ -136,6 +141,17 @@ export default function ProfilePage() {
         {/* Edit form */}
         {editing && (
           <div className="profile-edit">
+            <label className="profile-edit__label">
+              <span className="muted small">Nickname</span>
+              <input
+                className="input"
+                type="text"
+                placeholder="Enter a nickname…"
+                value={nickname}
+                onChange={(e) => setNickname(e.target.value)}
+                maxLength={30}
+              />
+            </label>
             <label className="profile-edit__label">
               <span className="muted small">Bio</span>
               <textarea
@@ -160,7 +176,7 @@ export default function ProfilePage() {
               <button className="btn" type="button" onClick={handleSave} disabled={saving}>
                 {saving ? 'Saving…' : 'Save'}
               </button>
-              <button className="btn btn--ghost" type="button" onClick={() => { setEditing(false); setBio(data.user.bio || ''); setBirthday(data.user.birthday || '') }}>
+              <button className="btn btn--ghost" type="button" onClick={() => { setEditing(false); setNickname(data.user.nickname || ''); setBio(data.user.bio || ''); setBirthday(data.user.birthday || '') }}>
                 Cancel
               </button>
             </div>

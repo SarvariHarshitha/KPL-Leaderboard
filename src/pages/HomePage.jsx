@@ -9,7 +9,7 @@ export default function HomePage({ onSignIn }) {
         <div className="hero3d__content">
           <h1 className="h1">Katwana Premier League (KPL)</h1>
           <p className="muted">
-            A fun friends leaderboard: post the weird/funny thing someone did, comment, and rate the post. Each post’s{' '}
+            A fun friends leaderboard: post the weird/funny thing someone did, comment, and rate the post. Each post's{' '}
             <b>average rating</b> adds to the total score of the <b>@mentioned</b> people.
           </p>
 
@@ -21,7 +21,7 @@ export default function HomePage({ onSignIn }) {
 
           {user ? (
             <div className="card" style={{ marginTop: 16 }}>
-              You’re signed in as <b>{user.displayName || user.email}</b>. Use the navigation to open Posts or Leaderboard.
+              You're signed in as <b>{user.nickname || user.displayName || user.email}</b>. Use the navigation to open Posts or Leaderboard.
             </div>
           ) : (
             <div className="row" style={{ marginTop: 16 }}>
@@ -51,7 +51,7 @@ export default function HomePage({ onSignIn }) {
         <ol className="list">
           <li>Create a post and mention friends like <code>@Asha</code> or <code>@Vikram</code>.</li>
           <li>Other signed-in users rate the post (1–5). You can edit or remove your rating.</li>
-          <li>We compute the post’s average rating and add it to every mentioned player’s total.</li>
+          <li>We compute the post's average rating and add it to every mentioned player's total.</li>
           <li>The Leaderboard ranks players by total score.</li>
         </ol>
 

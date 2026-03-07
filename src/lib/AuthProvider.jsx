@@ -33,7 +33,11 @@ export function AuthProvider({ children }) {
           photoURL: mapped.photoURL,
         })
           .then((dbUser) => {
-            setUser((prev) => prev ? { ...prev, role: dbUser.role || 'user' } : prev)
+            setUser((prev) => prev ? {
+              ...prev,
+              role: dbUser.role || 'user',
+              nickname: dbUser.nickname || '',
+            } : prev)
           })
           .catch((err) => console.error('User sync failed:', err))
       }

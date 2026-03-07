@@ -10,15 +10,21 @@ router.get('/:name', async (req, res) => {
     const name = decodeURIComponent(req.params.name)
     const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
-    // Try exact displayName match first (case-insensitive)
+    // Try exact displayName or nickname match first (case-insensitive)
     let user = await User.findOne({
-      displayName: { $regex: new RegExp(`^${escaped}$`, 'i') },
+      $or: [
+        { displayName: { $regex: new RegExp(`^${escaped}$`, 'i') } },
+        { nickname: { $regex: new RegExp(`^${escaped}$`, 'i') } },
+      ],
     }).lean()
 
     // If not found, try matching as a first name (e.g. @Asha → "Asha Sharma")
     if (!user) {
       user = await User.findOne({
-        displayName: { $regex: new RegExp(`^${escaped}\\b`, 'i') },
+        $or: [
+          { displayName: { $regex: new RegExp(`^${escaped}\\b`, 'i') } },
+          { nickname: { $regex: new RegExp(`^${escaped}\\b`, 'i') } },
+        ],
       }).lean()
     }
 
@@ -107,6 +113,7 @@ router.get('/:name', async (req, res) => {
         _id: user._id,
         firebaseUid: user.firebaseUid,
         displayName: user.displayName,
+        nickname: user.nickname || '',
         email: user.email,
         photoURL: user.photoURL,
         bio: user.bio || '',
@@ -134,10 +141,11 @@ router.get('/:name', async (req, res) => {
 // PATCH /api/profile/:uid — update own profile (bio, birthday)
 router.patch('/:uid', async (req, res) => {
   try {
-    const { bio, birthday } = req.body
+    const { bio, birthday, nickname } = req.body
     const update = {}
     if (bio !== undefined) update.bio = bio
     if (birthday !== undefined) update.birthday = birthday
+    if (nickname !== undefined) update.nickname = nickname
 
     const user = await User.findOneAndUpdate(
       { firebaseUid: req.params.uid },

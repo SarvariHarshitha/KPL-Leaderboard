@@ -253,20 +253,20 @@ function App() {
             ) : user ? (
               <>
                 <Link
-                  to={`/profile/${encodeURIComponent(user.displayName || user.email)}`}
+                  to={`/profile/${encodeURIComponent(user.nickname || user.displayName || user.email)}`}
                   className="auth__avatar-link"
-                  title={user.displayName || user.email}
+                  title={user.nickname || user.displayName || user.email}
                 >
                   {user.photoURL ? (
                     <img
                       src={user.photoURL}
-                      alt={user.displayName || user.email}
+                      alt={user.nickname || user.displayName || user.email}
                       className="auth__avatar"
                       referrerPolicy="no-referrer"
                     />
                   ) : (
                     <span className="auth__avatar auth__avatar--placeholder">
-                      {(user.displayName || user.email || '?').charAt(0).toUpperCase()}
+                      {(user.nickname || user.displayName || user.email || '?').charAt(0).toUpperCase()}
                     </span>
                   )}
                 </Link>

@@ -23,7 +23,7 @@ export default function MentionTextarea({ value, onChange, placeholder, rows = 4
 
   // Build the mention-friendly name (first name or displayName with spaces replaced)
   function mentionName(user) {
-    const name = (user.displayName || user.email || '').trim()
+    const name = (user.nickname || user.displayName || user.email || '').trim()
     // Use the first name (word) so mentions stay clean: @Asha not @Asha_Kumar
     const first = name.split(/\s+/)[0]
     return first || name
@@ -32,9 +32,11 @@ export default function MentionTextarea({ value, onChange, placeholder, rows = 4
   // Filtered user list based on what's typed after @
   const filtered = allUsers.filter((u) => {
     const name = mentionName(u).toLowerCase()
+    const display = (u.displayName || '').toLowerCase()
+    const nick = (u.nickname || '').toLowerCase()
     const email = (u.email || '').toLowerCase()
     const q = filter.toLowerCase()
-    return name.includes(q) || email.includes(q)
+    return name.includes(q) || display.includes(q) || nick.includes(q) || email.includes(q)
   })
 
   function getAtContext(text, cursor) {
@@ -146,9 +148,9 @@ export default function MentionTextarea({ value, onChange, placeholder, rows = 4
               }}
               onMouseEnter={() => setSelectedIdx(idx)}
             >
-              <span className="mention-dropdown__name">{u.displayName || u.email}</span>
-              {u.displayName && u.email && (
-                <span className="mention-dropdown__email">{u.email}</span>
+              <span className="mention-dropdown__name">{u.nickname || u.displayName || u.email}</span>
+              {(u.nickname || u.displayName) && u.email && (
+                <span className="mention-dropdown__email">{u.nickname ? u.displayName : u.email}</span>
               )}
             </li>
           ))}

@@ -80,10 +80,10 @@ export function fetchProfile(name) {
   return request(`/api/profile/${encodeURIComponent(name)}`)
 }
 
-export function updateProfile(uid, { bio, birthday }) {
+export function updateProfile(uid, { nickname, bio, birthday }) {
   return request(`/api/profile/${uid}`, {
     method: 'PATCH',
-    body: JSON.stringify({ bio, birthday }),
+    body: JSON.stringify({ nickname, bio, birthday }),
   })
 }
 

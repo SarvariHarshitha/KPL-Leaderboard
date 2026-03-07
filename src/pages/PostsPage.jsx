@@ -221,7 +221,7 @@ export default function PostsPage() {
           posts.map((post) => {
             const avg = getPostAverageRating(post)
             const mentionedLower = (post.mentionedNames ?? []).map((n) => n.toLowerCase())
-            const userName = (user?.displayName || user?.email || '').toLowerCase()
+            const userName = (user?.nickname || user?.displayName || user?.email || '').toLowerCase()
             const userFirstName = userName.split(/\s+/)[0]
             const isMentioned = user && mentionedLower.some(
               (m) => m === userFirstName || m === userName,
@@ -284,7 +284,7 @@ export default function PostsPage() {
                       isMentioned
                         ? 'You are mentioned — cannot rate'
                         : user
-                          ? user.displayName || user.email
+                          ? user.nickname || user.displayName || user.email
                           : 'Sign in to rate'
                     }
                     disabled={!user || isMentioned}
@@ -295,7 +295,7 @@ export default function PostsPage() {
                         ratePost({
                           postId: payload.postId,
                           raterId: user.uid,
-                          raterName: user.displayName || user.email,
+                          raterName: user.nickname || user.displayName || user.email,
                           rating: payload.rating,
                         })
                       } catch (err) {
@@ -328,7 +328,7 @@ export default function PostsPage() {
                               postId: pid,
                               commentId,
                               authorId: user.uid,
-                              authorName: user.displayName || user.email,
+                              authorName: user.nickname || user.displayName || user.email,
                               authorPhotoURL: user.photoURL || '',
                               text,
                             })
@@ -350,7 +350,7 @@ export default function PostsPage() {
                         addComment({
                           postId: payload.postId,
                           authorId: user.uid,
-                          authorName: user.displayName || user.email,
+                          authorName: user.nickname || user.displayName || user.email,
                           authorPhotoURL: user.photoURL || '',
                           text: payload.text,
                         })
@@ -394,7 +394,7 @@ export default function PostsPage() {
                 setError('')
                 try {
                   if (!user) throw new Error('Please sign in with Google to post')
-                  addPost({ authorId: user.uid, authorName: user.displayName || user.email, authorPhotoURL: user.photoURL || '', text })
+                  addPost({ authorId: user.uid, authorName: user.nickname || user.displayName || user.email, authorPhotoURL: user.photoURL || '', text })
                   setText('')
                   closeDialog()
                 } catch (err) {
@@ -405,7 +405,7 @@ export default function PostsPage() {
               <input
                 className="input"
                 placeholder="Signed-in as"
-                value={user ? user.displayName || user.email : ''}
+                value={user ? user.nickname || user.displayName || user.email : ''}
                 disabled
               />
               <MentionTextarea
