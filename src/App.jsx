@@ -107,44 +107,47 @@ function NotificationBell({ uid }) {
       </button>
 
       {open && (
-        <div className="notif-panel">
-          <div className="notif-panel__header">
-            <span className="notif-panel__title">Notifications</span>
-            {unreadCount > 0 && (
-              <button className="btn btn--ghost notif-panel__mark" type="button" onClick={handleMarkAllRead}>
-                Mark all read
-              </button>
-            )}
-          </div>
+        <>
+          <div className="notif-backdrop" onClick={() => setOpen(false)} />
+          <div className="notif-panel">
+            <div className="notif-panel__header">
+              <span className="notif-panel__title">Notifications</span>
+              {unreadCount > 0 && (
+                <button className="btn btn--ghost notif-panel__mark" type="button" onClick={handleMarkAllRead}>
+                  Mark all read
+                </button>
+              )}
+            </div>
 
-          <div className="notif-panel__list">
-            {loading && notifications.length === 0 && (
-              <div className="notif-empty">Loading…</div>
-            )}
-            {!loading && notifications.length === 0 && (
-              <div className="notif-empty">No notifications yet</div>
-            )}
-            {notifications.map((n) => (
-              <button
-                key={n._id}
-                className={`notif-item${n.read ? '' : ' notif-item--unread'}`}
-                type="button"
-                onClick={() => handleClickNotif(n)}
-              >
-                <span className="notif-item__icon">
-                  {n.type === 'mention' && '📣'}
-                  {n.type === 'comment' && '💬'}
-                  {n.type === 'rating' && '⭐'}
-                  {n.type === 'new_post' && '📝'}
-                </span>
-                <span className="notif-item__body">
-                  <span className="notif-item__msg">{n.message}</span>
-                  <span className="notif-item__time">{timeAgo(n.createdAt)}</span>
-                </span>
-              </button>
-            ))}
+            <div className="notif-panel__list">
+              {loading && notifications.length === 0 && (
+                <div className="notif-empty">Loading…</div>
+              )}
+              {!loading && notifications.length === 0 && (
+                <div className="notif-empty">No notifications yet</div>
+              )}
+              {notifications.map((n) => (
+                <button
+                  key={n._id}
+                  className={`notif-item${n.read ? '' : ' notif-item--unread'}`}
+                  type="button"
+                  onClick={() => handleClickNotif(n)}
+                >
+                  <span className="notif-item__icon">
+                    {n.type === 'mention' && '📣'}
+                    {n.type === 'comment' && '💬'}
+                    {n.type === 'rating' && '⭐'}
+                    {n.type === 'new_post' && '📝'}
+                  </span>
+                  <span className="notif-item__body">
+                    <span className="notif-item__msg">{n.message}</span>
+                    <span className="notif-item__time">{timeAgo(n.createdAt)}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   )

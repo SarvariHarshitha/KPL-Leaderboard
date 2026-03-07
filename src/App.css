@@ -673,8 +673,15 @@
 
 @media (max-width: 720px) {
   .topbar__inner {
-    flex-direction: column;
-    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .brand {
+    font-size: 14px;
+  }
+
+  .auth {
+    gap: 6px;
   }
 
   .rating {
@@ -1037,6 +1044,10 @@
   position: relative;
 }
 
+.notif-backdrop {
+  display: none;
+}
+
 .notif-bell {
   font-size: 20px;
   line-height: 1;
@@ -1181,8 +1192,56 @@
 }
 
 @media (max-width: 480px) {
+  .notif-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 99;
+  }
+
   .notif-panel {
-    width: calc(100vw - 32px);
-    right: -60px;
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-height: 70vh;
+    border-radius: 18px 18px 0 0;
+    z-index: 100;
+    animation: notif-slide-up 0.25s ease;
+  }
+
+  @keyframes notif-slide-up {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .notif-bell {
+    font-size: 18px;
+    padding: 4px 8px;
+  }
+}
+
+@media (max-width: 360px) {
+  .nav__link {
+    padding: 6px 8px;
+    font-size: 13px;
+  }
+
+  .auth {
+    gap: 4px;
+  }
+
+  .btn--ghost {
+    padding: 6px 8px;
+    font-size: 13px;
   }
 }
