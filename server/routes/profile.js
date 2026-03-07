@@ -33,32 +33,60 @@ router.get('/:name', async (req, res) => {
     // All posts
     const allPosts = await Post.find().lean({ virtuals: true })
 
+    // Build a uid→nickname and name→nickname lookup
+    const allUsers = await User.find({}, 'firebaseUid displayName nickname').lean()
+    const uidToNick = new Map()
+    const nameToNick = new Map()
+    for (const u of allUsers) {
+      const resolved = u.nickname || u.displayName || ''
+      if (u.firebaseUid) uidToNick.set(u.firebaseUid, resolved)
+      if (u.displayName) {
+        nameToNick.set(u.displayName.toLowerCase(), resolved)
+        const first = u.displayName.split(/\s+/)[0].toLowerCase()
+        if (first) nameToNick.set(first, resolved)
+      }
+      if (u.nickname) nameToNick.set(u.nickname.toLowerCase(), u.nickname)
+    }
+
+    // Patch post fields to use nicknames
+    function patchPost(p) {
+      if (p.authorId && uidToNick.has(p.authorId)) p.author = uidToNick.get(p.authorId)
+      if (p.mentionedNames?.length) {
+        p.mentionedNames = p.mentionedNames.map((n) => nameToNick.get(n.toLowerCase()) || n)
+      }
+      return p
+    }
+
     // Posts authored by this user
     const authoredPosts = allPosts
       .filter((p) => p.authorId === user.firebaseUid)
+      .map(patchPost)
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
 
-    // Posts where this user is mentioned
+    // Posts where this user is mentioned (match by displayName, nickname, or first name)
     const nameLower = user.displayName.toLowerCase()
     const firstName = nameLower.split(/\s+/)[0]
+    const nickLower = (user.nickname || '').toLowerCase()
     const mentionedPosts = allPosts
       .filter((p) =>
         (p.mentionedNames ?? []).some((m) => {
           const ml = m.toLowerCase()
-          return ml === firstName || ml === nameLower
+          return ml === firstName || ml === nameLower || (nickLower && ml === nickLower)
         }),
       )
+      .map(patchPost)
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
 
     // Comments by this user (across all posts)
     const userComments = []
     for (const p of allPosts) {
+      const postAuthorNick = (p.authorId && uidToNick.get(p.authorId)) || p.author
       for (const c of p.comments ?? []) {
         if (c.authorId === user.firebaseUid) {
           userComments.push({
             ...c,
             postId: p._id,
-            postAuthor: p.author,
+            postAuthor: postAuthorNick,
             postText: p.text.slice(0, 80),
           })
         }
@@ -74,9 +102,11 @@ router.get('/:name', async (req, res) => {
       const avg = ratings.reduce((s, r) => s + r.value, 0) / ratings.length
       for (const mn of post.mentionedNames ?? []) {
         const key = mn.toLowerCase()
-        const existing = leaderboardMap.get(key) ?? { name: mn, score: 0, postsMentionedIn: 0 }
+        const resolvedName = nameToNick.get(key) || mn
+        const existing = leaderboardMap.get(key) ?? { name: resolvedName, score: 0, postsMentionedIn: 0 }
         existing.score += avg
         existing.postsMentionedIn += 1
+        existing.name = resolvedName
         leaderboardMap.set(key, existing)
       }
     }
@@ -85,7 +115,10 @@ router.get('/:name', async (req, res) => {
     )
 
     const overallEntry = leaderboard.find(
-      (r) => r.name.toLowerCase() === firstName || r.name.toLowerCase() === nameLower,
+      (r) => {
+        const rl = r.name.toLowerCase()
+        return rl === firstName || rl === nameLower || (nickLower && rl === nickLower)
+      },
     )
     const overallScore = overallEntry ? Math.round(overallEntry.score * 100) / 100 : 0
     const overallRank = overallEntry ? leaderboard.indexOf(overallEntry) + 1 : null
@@ -102,7 +135,7 @@ router.get('/:name', async (req, res) => {
       const avg = ratings.reduce((s, r) => s + r.value, 0) / ratings.length
       const mentioned = (post.mentionedNames ?? []).some((m) => {
         const ml = m.toLowerCase()
-        return ml === firstName || ml === nameLower
+        return ml === firstName || ml === nameLower || (nickLower && ml === nickLower)
       })
       if (mentioned) monthlyScore += avg
     }

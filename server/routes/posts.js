@@ -13,11 +13,68 @@ function extractMentionedNames(text) {
   return [...new Set(matches.map((m) => m.slice(1).trim()).filter(Boolean))]
 }
 
+// Build a uid→nickname map from the User collection
+async function buildNicknameMap() {
+  const users = await User.find({}, 'firebaseUid displayName nickname').lean()
+  const map = new Map()
+  for (const u of users) {
+    if (u.firebaseUid) {
+      map.set(u.firebaseUid, u.nickname || u.displayName || '')
+    }
+    // Also map by displayName (lowercased) for mention lookups
+    if (u.displayName) {
+      map.set(`name:${u.displayName.toLowerCase()}`, u.nickname || u.displayName)
+      const first = u.displayName.split(/\s+/)[0].toLowerCase()
+      if (first) map.set(`name:${first}`, u.nickname || u.displayName)
+    }
+    if (u.nickname) {
+      map.set(`name:${u.nickname.toLowerCase()}`, u.nickname)
+    }
+  }
+  return map
+}
+
+// Apply nickname to a post (author, comments, ratings, mentionedNames)
+function applyNicknames(post, nickMap) {
+  // Post author
+  if (post.authorId && nickMap.has(post.authorId)) {
+    post.author = nickMap.get(post.authorId)
+  }
+  // Mentioned names — resolve to nickname
+  if (post.mentionedNames?.length) {
+    post.mentionedNames = post.mentionedNames.map((n) => {
+      const resolved = nickMap.get(`name:${n.toLowerCase()}`)
+      return resolved || n
+    })
+  }
+  // Comments (recursive)
+  function patchComments(list) {
+    for (const c of list) {
+      if (c.authorId && nickMap.has(c.authorId)) {
+        c.author = nickMap.get(c.authorId)
+      }
+      if (c.replies?.length) patchComments(c.replies)
+    }
+  }
+  if (post.comments?.length) patchComments(post.comments)
+  // Ratings
+  if (post.ratings?.length) {
+    for (const r of post.ratings) {
+      if (r.raterId && nickMap.has(r.raterId)) {
+        r.raterName = nickMap.get(r.raterId)
+      }
+    }
+  }
+  return post
+}
+
 // GET /api/posts — list all posts (newest first)
 router.get('/', async (_req, res) => {
   try {
     const posts = await Post.find().sort({ createdAt: -1 }).lean({ virtuals: true })
-    res.json(posts)
+    const nickMap = await buildNicknameMap()
+    const patched = posts.map((p) => applyNicknames(p, nickMap))
+    res.json(patched)
   } catch (err) {
     console.error('GET /posts error:', err)
     res.status(500).json({ error: 'Server error' })
@@ -42,6 +99,7 @@ router.post('/', async (req, res) => {
     // Notify mentioned users
     notifyMentioned({
       mentionedNames: post.mentionedNames,
+      authorUid: authorId,
       authorName,
       authorPhotoURL,
       postId: post._id,
@@ -94,7 +152,7 @@ router.post('/:id/comments', async (req, res) => {
     await post.save()
 
     // Notify post author about the comment
-    notifyComment({ post, commenterName: authorName, commenterPhotoURL: authorPhotoURL })
+    notifyComment({ post, commenterUid: authorId, commenterName: authorName, commenterPhotoURL: authorPhotoURL })
 
     res.status(201).json(post.toJSON())
   } catch (err) {
@@ -187,7 +245,7 @@ router.post('/:postId/comments/:commentId/replies', async (req, res) => {
 
     // Notify the parent comment author about the reply
     if (parent.authorId !== authorId) {
-      notifyComment({ post, commenterName: authorName, commenterPhotoURL: authorPhotoURL })
+      notifyComment({ post, commenterUid: authorId, commenterName: authorName, commenterPhotoURL: authorPhotoURL })
     }
 
     res.status(201).json(post.toJSON())
@@ -228,7 +286,7 @@ router.post('/:id/rate', async (req, res) => {
 
     // Notify post author about the rating (only when adding, not removing)
     if (value > 0) {
-      notifyRating({ post, raterName })
+      notifyRating({ post, raterUid: raterId, raterName })
     }
 
     res.json(post.toJSON())

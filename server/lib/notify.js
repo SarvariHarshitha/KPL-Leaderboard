@@ -2,29 +2,42 @@ import Notification from '../models/Notification.js'
 import User from '../models/User.js'
 
 /**
+ * Resolve a firebaseUid to the user's nickname or displayName.
+ */
+async function resolveNickname(firebaseUid) {
+  if (!firebaseUid) return null
+  const u = await User.findOne({ firebaseUid }, 'nickname displayName').lean()
+  return u ? (u.nickname || u.displayName || '') : null
+}
+
+/**
  * Create notifications for relevant users.
  * Does not throw — errors are logged silently.
  */
 
-export async function notifyMentioned({ mentionedNames, authorName, authorPhotoURL, postId }) {
+export async function notifyMentioned({ mentionedNames, authorUid, authorName, authorPhotoURL, postId }) {
   try {
     if (!mentionedNames?.length) return
-    // Find users whose first name matches a mention
-    const allUsers = await User.find({}, 'firebaseUid displayName').lean()
+    // Resolve author nickname
+    const resolvedAuthor = (await resolveNickname(authorUid)) || authorName
+
+    // Find users whose first name or nickname matches a mention
+    const allUsers = await User.find({}, 'firebaseUid displayName nickname').lean()
 
     for (const mention of mentionedNames) {
       const mentionLower = mention.toLowerCase()
       const matchedUser = allUsers.find((u) => {
         const dn = (u.displayName || '').toLowerCase()
+        const nn = (u.nickname || '').toLowerCase()
         const first = dn.split(/\s+/)[0]
-        return first === mentionLower || dn === mentionLower
+        return first === mentionLower || dn === mentionLower || nn === mentionLower
       })
       if (matchedUser) {
         await Notification.create({
           recipientUid: matchedUser.firebaseUid,
           type: 'mention',
-          message: `${authorName} mentioned you in a post`,
-          fromUser: authorName,
+          message: `${resolvedAuthor} mentioned you in a post`,
+          fromUser: resolvedAuthor,
           fromPhotoURL: authorPhotoURL || '',
           postId,
         })
@@ -35,19 +48,25 @@ export async function notifyMentioned({ mentionedNames, authorName, authorPhotoU
   }
 }
 
-export async function notifyComment({ post, commenterName, commenterPhotoURL }) {
+export async function notifyComment({ post, commenterUid, commenterName, commenterPhotoURL }) {
   try {
     // Don't notify if commenter is the post author
     if (post.authorId === undefined) return
-    const commenterLower = (commenterName || '').toLowerCase()
+    if (commenterUid && commenterUid === post.authorId) return
+
+    // Resolve commenter nickname
+    const resolvedCommenter = (await resolveNickname(commenterUid)) || commenterName
+
+    // Fallback: compare names if uids not available
+    const commenterLower = (resolvedCommenter || '').toLowerCase()
     const postAuthorLower = (post.author || '').toLowerCase()
-    if (commenterLower === postAuthorLower) return
+    if (!commenterUid && commenterLower === postAuthorLower) return
 
     await Notification.create({
       recipientUid: post.authorId,
       type: 'comment',
-      message: `${commenterName} commented on your post`,
-      fromUser: commenterName,
+      message: `${resolvedCommenter} commented on your post`,
+      fromUser: resolvedCommenter,
       fromPhotoURL: commenterPhotoURL || '',
       postId: post._id,
     })
@@ -56,18 +75,23 @@ export async function notifyComment({ post, commenterName, commenterPhotoURL }) 
   }
 }
 
-export async function notifyRating({ post, raterName }) {
+export async function notifyRating({ post, raterUid, raterName }) {
   try {
     // Don't notify if rater is the post author
-    const raterLower = (raterName || '').toLowerCase()
+    if (raterUid && raterUid === post.authorId) return
+
+    // Resolve rater nickname
+    const resolvedRater = (await resolveNickname(raterUid)) || raterName
+
+    const raterLower = (resolvedRater || '').toLowerCase()
     const postAuthorLower = (post.author || '').toLowerCase()
-    if (raterLower === postAuthorLower) return
+    if (!raterUid && raterLower === postAuthorLower) return
 
     await Notification.create({
       recipientUid: post.authorId,
       type: 'rating',
-      message: `${raterName} rated your post`,
-      fromUser: raterName,
+      message: `${resolvedRater} rated your post`,
+      fromUser: resolvedRater,
       fromPhotoURL: '',
       postId: post._id,
     })
