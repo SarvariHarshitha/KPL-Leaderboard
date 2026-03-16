@@ -47,6 +47,10 @@ export function KplProvider({ children }) {
       await api.ratePost(postId, { raterId, raterName, rating })
       await refresh()
     },
+    toggleLike: async ({ postId, userId }) => {
+      await api.toggleLike(postId, { userId })
+      await refresh()
+    },
     refresh,
   }), [refresh])
 

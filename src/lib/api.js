@@ -27,10 +27,10 @@ export function fetchPosts() {
   return request('/api/posts')
 }
 
-export function createPost({ authorId, authorName, authorPhotoURL, text }) {
+export function createPost({ authorId, authorName, authorPhotoURL, text, type }) {
   return request('/api/posts', {
     method: 'POST',
-    body: JSON.stringify({ authorId, authorName, authorPhotoURL, text }),
+    body: JSON.stringify({ authorId, authorName, authorPhotoURL, text, type }),
   })
 }
 
@@ -62,6 +62,14 @@ export function ratePost(postId, { raterId, raterName, rating }) {
   return request(`/api/posts/${postId}/rate`, {
     method: 'POST',
     body: JSON.stringify({ raterId, raterName, rating }),
+  })
+}
+
+// Likes
+export function toggleLike(postId, { userId }) {
+  return request(`/api/posts/${postId}/like`, {
+    method: 'POST',
+    body: JSON.stringify({ userId }),
   })
 }
 

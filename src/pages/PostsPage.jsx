@@ -170,9 +170,10 @@ function CommentItem({ comment, postId, depth, user, isAdmin, onDelete, onReply 
 }
 
 export default function PostsPage() {
-  const { state, loading, addPost, addComment, addReply, deletePost, deleteComment, ratePost, refresh } = useKpl()
+  const { state, loading, addPost, addComment, addReply, deletePost, deleteComment, ratePost, toggleLike, refresh } = useKpl()
   const { user } = useAuth()
   const [text, setText] = useState('')
+  const [postType, setPostType] = useState('rating')
   const [error, setError] = useState('')
   const [dialogOpen, setDialogOpen] = useState(false)
   const dialogRef = useRef(null)
@@ -207,8 +208,7 @@ export default function PostsPage() {
         <div>
           <h1 className="h1">KPL Posts</h1>
           <p className="muted">
-            Create a post, tag friends like <code>@Asha</code>, and let others rate it. Each post’s average rating gets
-            added to the tagged friends’ total.
+            Create a post, tag friends like <code>@Asha</code>, and choose a rating post (adds to leaderboard) or a social post (likes + comments).
           </p>
         </div>
       </section>
@@ -227,11 +227,14 @@ export default function PostsPage() {
             const isMentioned = user && mentionedLower.some(
               (m) => m === userFirstName || m === userName,
             )
+            const isSocial = post.type === 'social'
+            const likes = post.likes ?? []
+            const isLiked = user ? likes.includes(user.uid) : false
             const isAdmin = user?.role === 'admin'
             const isPostAuthor = user && post.authorId === user.uid
             const canDeletePost = isAdmin || isPostAuthor
             return (
-              <article key={post._id} className="post">
+              <article key={post._id} className={`post ${isSocial ? 'post--social' : 'post--rating'}`}>
                 <div className="post__top">
                   <div>
                     <div className="post__meta">
@@ -241,6 +244,9 @@ export default function PostsPage() {
                         <span className="avatar avatar--placeholder">{(post.author || '?')[0]}</span>
                       )}
                       <Link to={`/profile/${encodeURIComponent(post.author)}`} className="post__author post__author--link">{post.author}</Link>
+                      <span className={`post__badge ${isSocial ? 'post__badge--social' : 'post__badge--rating'}`}>
+                        {isSocial ? 'Social' : 'Rating'}
+                      </span>
                       <span className="dot">•</span>
                       <span className="muted">{new Date(post.createdAt).toLocaleString()}</span>
                     </div>
@@ -259,8 +265,17 @@ export default function PostsPage() {
                   </div>
 
                   <div className="post__score">
-                    <Stars value={avg} />
-                    <div className="muted small">{(post.ratings ?? []).length || 0} ratings</div>
+                    {isSocial ? (
+                      <>
+                        <div className="stars">♥ {likes.length}</div>
+                        <div className="muted small">{likes.length} like{likes.length !== 1 ? 's' : ''}</div>
+                      </>
+                    ) : (
+                      <>
+                        <Stars value={avg} />
+                        <div className="muted small">{(post.ratings ?? []).length || 0} ratings</div>
+                      </>
+                    )}
                     {canDeletePost && (
                       <button
                         className="btn btn--ghost"
@@ -279,31 +294,51 @@ export default function PostsPage() {
                 </div>
 
                 <div className="post__actions">
-                  <RatingBar
-                    postId={post._id}
-                    currentUserLabel={
-                      isMentioned
-                        ? 'You are mentioned — cannot rate'
-                        : user
-                          ? user.nickname || user.displayName || user.email
-                          : 'Sign in to rate'
-                    }
-                    disabled={!user || isMentioned}
-                    onRate={(payload) => {
-                      setError('')
-                      try {
-                        if (!user) throw new Error('Please sign in to rate')
-                        ratePost({
-                          postId: payload.postId,
-                          raterId: user.uid,
-                          raterName: user.nickname || user.displayName || user.email,
-                          rating: payload.rating,
-                        })
-                      } catch (err) {
-                        setError(err.message)
+                  {isSocial ? (
+                    <div className="post__likes">
+                      <button
+                        className={`btn btn--ghost post__like-btn${isLiked ? ' is-liked' : ''}`}
+                        type="button"
+                        onClick={() => {
+                          if (!user) {
+                            setError('Please sign in to like')
+                            return
+                          }
+                          toggleLike({ postId: post._id, userId: user.uid })
+                        }}
+                        title={isLiked ? 'Unlike' : 'Like'}
+                      >
+                        {isLiked ? '❤️ Liked' : '🤍 Like'}
+                      </button>
+                      <span className="muted small">{likes.length} like{likes.length !== 1 ? 's' : ''}</span>
+                    </div>
+                  ) : (
+                    <RatingBar
+                      postId={post._id}
+                      currentUserLabel={
+                        isMentioned
+                          ? 'You are mentioned — cannot rate'
+                          : user
+                            ? user.nickname || user.displayName || user.email
+                            : 'Sign in to rate'
                       }
-                    }}
-                  />
+                      disabled={!user || isMentioned}
+                      onRate={(payload) => {
+                        setError('')
+                        try {
+                          if (!user) throw new Error('Please sign in to rate')
+                          ratePost({
+                            postId: payload.postId,
+                            raterId: user.uid,
+                            raterName: user.nickname || user.displayName || user.email,
+                            rating: payload.rating,
+                          })
+                        } catch (err) {
+                          setError(err.message)
+                        }
+                      }}
+                    />
+                  )}
                 </div>
 
                 <div className="post__comments">
@@ -395,8 +430,15 @@ export default function PostsPage() {
                 setError('')
                 try {
                   if (!user) throw new Error('Please sign in with Google to post')
-                  addPost({ authorId: user.uid, authorName: user.nickname || user.displayName || user.email, authorPhotoURL: user.photoURL || '', text })
+                  addPost({
+                    authorId: user.uid,
+                    authorName: user.nickname || user.displayName || user.email,
+                    authorPhotoURL: user.photoURL || '',
+                    text,
+                    type: postType,
+                  })
                   setText('')
+                  setPostType('rating')
                   closeDialog()
                 } catch (err) {
                   setError(err.message)
@@ -409,6 +451,25 @@ export default function PostsPage() {
                 value={user ? user.nickname || user.displayName || user.email : ''}
                 disabled
               />
+              <div className="post-type">
+                <span className="muted small">Post type</span>
+                <div className="post-type__options">
+                  <button
+                    className={`btn btn--ghost btn--xs ${postType === 'rating' ? 'is-active' : ''}`}
+                    type="button"
+                    onClick={() => setPostType('rating')}
+                  >
+                    ⭐ Rating post
+                  </button>
+                  <button
+                    className={`btn btn--ghost btn--xs ${postType === 'social' ? 'is-active' : ''}`}
+                    type="button"
+                    onClick={() => setPostType('social')}
+                  >
+                    ❤️ Social post
+                  </button>
+                </div>
+              </div>
               <MentionTextarea
                 placeholder="Post text (type @ to mention friends)"
                 value={text}

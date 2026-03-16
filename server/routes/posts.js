@@ -84,16 +84,21 @@ router.get('/', async (_req, res) => {
 // POST /api/posts — create post
 router.post('/', async (req, res) => {
   try {
-    const { authorId, authorName, authorPhotoURL, text } = req.body
+    const { authorId, authorName, authorPhotoURL, text, type } = req.body
     if (!authorId || !authorName) return res.status(400).json({ error: 'Author info required' })
     if (!text?.trim()) return res.status(400).json({ error: 'Post text is required' })
+    if (type && !['rating', 'social'].includes(type)) {
+      return res.status(400).json({ error: 'Invalid post type' })
+    }
 
     const post = await Post.create({
       authorId,
       author: authorName,
       authorPhotoURL: authorPhotoURL || '',
       text: text.trim(),
+      type: type || 'rating',
       mentionedNames: extractMentionedNames(text),
+      likes: [],
     })
 
     // Notify mentioned users
@@ -266,6 +271,9 @@ router.post('/:id/rate', async (req, res) => {
 
     const post = await Post.findById(req.params.id)
     if (!post) return res.status(404).json({ error: 'Post not found' })
+    if (post.type === 'social') {
+      return res.status(400).json({ error: 'This post does not accept ratings' })
+    }
 
     // Mentioned people are not allowed to rate
     const mentionedLower = (post.mentionedNames ?? []).map((n) => n.toLowerCase())
@@ -292,6 +300,31 @@ router.post('/:id/rate', async (req, res) => {
     res.json(post.toJSON())
   } catch (err) {
     console.error('POST /rate error:', err)
+    res.status(500).json({ error: 'Server error' })
+  }
+})
+
+// POST /api/posts/:id/like — toggle like
+router.post('/:id/like', async (req, res) => {
+  try {
+    const { userId } = req.body
+    if (!userId) return res.status(400).json({ error: 'userId is required' })
+
+    const post = await Post.findById(req.params.id)
+    if (!post) return res.status(404).json({ error: 'Post not found' })
+
+    const likes = new Set(post.likes ?? [])
+    if (likes.has(userId)) {
+      likes.delete(userId)
+    } else {
+      likes.add(userId)
+    }
+    post.likes = [...likes]
+    await post.save()
+
+    res.json(post.toJSON())
+  } catch (err) {
+    console.error('POST /like error:', err)
     res.status(500).json({ error: 'Server error' })
   }
 })

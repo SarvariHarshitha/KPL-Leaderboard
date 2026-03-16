@@ -27,9 +27,11 @@ const postSchema = new mongoose.Schema(
     author: { type: String, required: true },
     authorPhotoURL: { type: String, default: '' },
     text: { type: String, required: true },
+    type: { type: String, enum: ['rating', 'social'], default: 'rating' },
     mentionedNames: [String],
     comments: [commentSchema],
     ratings: [ratingSchema],
+    likes: { type: [String], default: [] },
   },
   { timestamps: true },
 )

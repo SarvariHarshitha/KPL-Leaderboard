@@ -345,6 +345,16 @@
   background: var(--panel-solid);
 }
 
+.post--rating {
+  border-color: rgba(255, 215, 0, 0.35);
+  box-shadow: 0 0 0 1px rgba(255, 215, 0, 0.12) inset;
+}
+
+.post--social {
+  border-color: rgba(255, 99, 132, 0.35);
+  box-shadow: 0 0 0 1px rgba(255, 99, 132, 0.12) inset;
+}
+
 .post__top {
   display: flex;
   justify-content: space-between;
@@ -384,6 +394,25 @@
   align-items: center;
   gap: 8px;
   margin-bottom: 8px;
+}
+
+.post__badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--pill-bg);
+}
+
+.post__badge--rating {
+  border-color: rgba(255, 215, 0, 0.6);
+  color: #b8860b;
+}
+
+.post__badge--social {
+  border-color: rgba(255, 99, 132, 0.6);
+  color: #e91e63;
 }
 
 .post__author {
@@ -434,6 +463,33 @@
 
 .post__actions {
   margin-top: 12px;
+}
+
+.post__likes {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.post__like-btn.is-liked {
+  border-color: rgba(255, 99, 132, 0.6);
+  color: #e91e63;
+}
+
+.post-type {
+  display: grid;
+  gap: 6px;
+}
+
+.post-type__options {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.post-type__options .btn.is-active {
+  border-color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--text);
 }
 
 .rating {
