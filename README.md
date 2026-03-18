@@ -82,3 +82,11 @@ Then restart the dev server.
 - `npm run preview` — preview production build
 - `npm run test` — run tests in watch mode
 - `npm run test:run` — run tests once
+
+## PWA & notifications
+
+- Install on Android/iOS/desktop from the browser menu (manifest + icons + standalone display).
+- Offline-first caching for shell/assets; API calls fall back online-first with cache backup.
+- Service worker listens for **push** payloads shaped like `{ title, body, url }` and opens/focuses the app when tapped.
+- Users can enable notifications via the **Enable alerts** button beside the bell; we also show a lightweight local notification on success.
+- To wire real push delivery, send web-push messages to the service worker registration with the same payload shape (VAPID/server wiring not included here).

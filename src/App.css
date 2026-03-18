@@ -1569,6 +1569,23 @@
   position: relative;
 }
 
+.notif-optin {
+  font-size: 13px;
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 6px 10px;
+  margin-right: 6px;
+}
+
+.notif-optin:hover {
+  color: var(--text);
+}
+
+.notif-optin__blocked {
+  cursor: not-allowed;
+  padding: 0;
+}
+
 .notif-backdrop {
   display: none;
 }

@@ -5,6 +5,9 @@ import './index.css'
 import App from './App.jsx'
 import { KplProvider } from './lib/KplProvider.jsx'
 import { AuthProvider } from './lib/AuthProvider.jsx'
+import { ensureServiceWorker } from './lib/pwa.js'
+
+ensureServiceWorker()
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

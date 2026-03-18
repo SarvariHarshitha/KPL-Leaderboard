@@ -8,6 +8,7 @@ import { useAuth } from './lib/useAuth.js'
 import HomePage from './pages/HomePage.jsx'
 import { fetchNotifications, markNotificationsRead, deleteNotification, deleteAllNotifications, fetchUsers } from './lib/api.js'
 import TrashIcon from './components/TrashIcon.jsx'
+import { ensureServiceWorker, getNotificationPermission, requestNotificationPermission, showLocalNotification, subscribePermissionListener } from './lib/pwa.js'
 
 function RequireAuth({ children }) {
   const { user, loading } = useAuth()
@@ -322,6 +323,51 @@ function UserSearch() {
   )
 }
 
+function NotificationOptIn() {
+  const [permission, setPermission] = useState(() => getNotificationPermission())
+  const [enabling, setEnabling] = useState(false)
+
+  useEffect(() => {
+    const unsubscribe = subscribePermissionListener((state) => setPermission(state))
+    return unsubscribe
+  }, [])
+
+  if (permission === 'unsupported') return null
+  if (permission === 'denied') {
+    return <span className="notif-optin notif-optin__blocked muted small">Notifications blocked in browser</span>
+  }
+  if (permission === 'granted') return null
+
+  const handleEnable = async () => {
+    setEnabling(true)
+    try {
+      await ensureServiceWorker()
+      const status = await requestNotificationPermission()
+      setPermission(status)
+      if (status === 'granted') {
+        await showLocalNotification('Notifications enabled', {
+          body: 'We will alert you about mentions, posts, and leaderboard updates.',
+        })
+      }
+    } catch (err) {
+      console.error('Failed to enable notifications', err)
+    } finally {
+      setEnabling(false)
+    }
+  }
+
+  return (
+    <button
+      className="btn btn--ghost notif-optin"
+      type="button"
+      onClick={handleEnable}
+      disabled={enabling}
+    >
+      {enabling ? 'Enabling…' : 'Enable alerts'}
+    </button>
+  )
+}
+
 function App() {
   const { user, loading, loginWithGoogle, logout } = useAuth()
   const [darkMode, setDarkMode] = useState(() => {
@@ -370,6 +416,7 @@ function App() {
           {user && <UserSearch />}
 
           <div className="auth">
+            {user && <NotificationOptIn />}
             {user && <NotificationBell uid={user.uid} />}
             <button
               className="btn btn--ghost theme-toggle"
